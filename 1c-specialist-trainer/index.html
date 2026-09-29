@@ -942,8 +942,8 @@ const CASES = [
 
 // ───────────────────────── ДАННЫЕ: план ─────────────────────────
 const WEEKS = [
- { n:1, title:"Старт и 1С:Профессионал", items:["Прогнать 1С:Учебное тестирование по платформе (бесплатно, uc1.1c.ru)","Теория: Платформа и объекты","Тест по модулю «Платформа»","Скачать примеры билетов и каркасную конфигурацию с 1c.ru"], mods:["m1"] },
- { n:2, title:"Сдать Профессионал, запросы", items:["Сдать 1С:Профессионал по платформе (допуск к Специалисту)","Теория: Язык запросов","Тест «Запросы»: 90%+","Задача «Удобная форма документа»"], mods:["m3"], tasks:["t8"] },
+ { n:1, title:"Старт: платформа и запросы", items:["Скачать примеры билетов и каркасную конфигурацию с 1c.ru, развернуть учебную базу","Теория: Платформа и объекты, Язык запросов","Тесты по обоим модулям: 90%+"], mods:["m1","m3"] },
+ { n:2, title:"Диагностика и формы", items:["Решить официальный пример билета без таймера — выписать, где застряли","Задача «Удобная форма документа»","Повтор тем, где застряли на билете"], tasks:["t8"] },
  { n:3, title:"Оперативный учёт: база", items:["Теория: Оперативный учёт","Разбор «Склад и средняя себестоимость» — повторить в своей базе","Тест «Оперативный учёт»"], mods:["m2"], cases:["c1"] },
  { n:4, title:"Себестоимость на время", items:["Задача «Склад и средняя себестоимость» с нуля за 2 часа","Проверка решения через Claude, работа над ошибками","Задача «Ведомость по складам на СКД»"], tasks:["t1","t6"] },
  { n:5, title:"Партии и цены", items:["Разбор «FIFO: списание партий»","Задача «Партии по FIFO»","Задача «Цены и скидки клиентов»"], cases:["c2"], tasks:["t2","t3"] },
@@ -1143,10 +1143,10 @@ function renderPlan(v) {
     <section class="panel">
       <div class="prose">
         <h2>Как устроен тренажёр</h2>
-        <p>Экзамен 1С:Специалист — практическая задача в конфигураторе. Поэтому основная работа здесь — задачи в формате билета: решаете в своей базе, вставляете код, получаете разбор по критериям. Теория и тесты нужны, чтобы закрыть пробелы и сдать входной экзамен 1С:Профессионал.</p>
+        <p>Экзамен 1С:Специалист — практическая задача в конфигураторе. Поэтому основная работа здесь — задачи в формате билета: решаете в своей базе, вставляете код, получаете разбор по критериям. Теория и тесты нужны, чтобы быстро закрыть пробелы в механизмах платформы.</p>
         <ol>
           <li><b>Теория</b> — 6 модулей с кодом-шаблоном и типичными ошибками.</li>
-          <li><b>Тесты</b> — 36 вопросов с объяснениями; режим «14 случайных» как на Профессионале (проходной — 12).</li>
+          <li><b>Тесты</b> — 36 вопросов с объяснениями; быстрый повтор из 15 случайных, по модулю и по своим ошибкам.</li>
           <li><b>Задачи</b> — 8 задач по блокам билета, таймер, самопроверка по критериям и проверка решения Claude.</li>
           <li><b>Разборы</b> — 4 задачи, решённые по шагам: от условия до тестовых цифр.</li>
         </ol>
@@ -1230,7 +1230,7 @@ function startTest() {
   if (testCfg.mode === "module") pool = QUESTIONS.filter(q => q.m === testCfg.mod);
   if (testCfg.mode === "mistakes") pool = QUESTIONS.filter(q => S.tests[q.id] === false);
   let ids = shuffle(pool.map(q => q.id));
-  if (testCfg.mode === "exam") ids = ids.slice(0, 14);
+  if (testCfg.mode === "exam") ids = ids.slice(0, 15);
   run = { ids, i: 0, answers: {} };
 }
 function renderTests(v) {
@@ -1240,7 +1240,7 @@ function renderTests(v) {
   const setup = `<section class="panel">
     <div class="row between"><h2>Тесты</h2><span class="muted small">Верно отвечено: ${right} из ${QUESTIONS.length}</span></div>
     <div class="row">
-      <button class="btn ${testCfg.mode === "exam" ? "primary" : ""}" data-mode="exam">14 случайных — как Профессионал</button>
+      <button class="btn ${testCfg.mode === "exam" ? "primary" : ""}" data-mode="exam">Быстрый повтор · 15 случайных</button>
       <button class="btn ${testCfg.mode === "module" ? "primary" : ""}" data-mode="module">По модулю</button>
       <button class="btn ${testCfg.mode === "all" ? "primary" : ""}" data-mode="all">Все ${QUESTIONS.length}</button>
       <button class="btn ${testCfg.mode === "mistakes" ? "primary" : ""}" data-mode="mistakes" ${mistakes ? "" : "disabled"}>Мои ошибки · ${mistakes}</button>
@@ -1250,12 +1250,12 @@ function renderTests(v) {
     v.innerHTML = `<div style="display:grid;gap:16px">${setup}<section class="panel"><p class="muted">${run && !run.ids.length ? "В этом режиме нет вопросов." : "Выберите режим — тест начнётся сразу."}</p></section></div>`;
   } else if (run.i >= run.ids.length) {
     const ok = run.ids.filter(id => run.answers[id] === QUESTIONS.find(q => q.id === id).c).length;
-    const passed = testCfg.mode === "exam" ? ok >= 12 : pct(ok, run.ids.length) >= 85;
+    const passed = pct(ok, run.ids.length) >= 85;
     const wrongList = run.ids.filter(id => run.answers[id] !== QUESTIONS.find(q => q.id === id).c).map(id => { const q = QUESTIONS.find(x => x.id === id); return `<li><b>${esc(q.q)}</b><br><span class="muted">Верно: ${esc(q.a[q.c])}. ${esc(q.e)}</span></li>`; }).join("");
     v.innerHTML = `<div style="display:grid;gap:16px">${setup}<section class="panel">
       <span class="label">Результат</span>
       <div class="row"><span class="result-big">${ok} / ${run.ids.length}</span><span class="pill ${passed ? "ok" : "bad"}">${passed ? "зачёт" : "нужно повторить"}</span></div>
-      <p class="muted small">${testCfg.mode === "exam" ? "На 1С:Профессионал нужно 12 верных из 14." : "Цель — 85% и выше."}</p>
+      <p class="muted small">Цель — 85% и выше.</p>
       ${wrongList ? `<h3>Разбор ошибок</h3><ul class="prose" style="max-width:none">${wrongList}</ul>` : ""}
       <div class="row"><button class="btn primary" id="again">Ещё раз</button></div></section></div>`;
     v.querySelector("#again").onclick = () => { startTest(); render(); };
